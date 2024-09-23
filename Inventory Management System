@@ -1,0 +1,716 @@
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+/**************************************************************************************************/
+/***************************YOU MUST REMARK IT BEFORE SUBMISSION***********************************/
+#define DEBUGON
+/***************************YOU MUST REMARK IT BEFORE SUBMISSION***********************************/
+/**************************************************************************************************/
+
+/* Submitters
+Name1: Gal Cohen                 ID: 209548809
+Name2: Omri Hickri               ID: 318422540
+*/
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
+/* structures */
+typedef struct item {
+    char* name;
+    int  id;
+    struct wlst* warehouses;
+
+} item;
+
+typedef struct warehouse {
+    char* location;
+    int  code;
+    struct itemlst* items;
+} warehouse;
+
+typedef struct itemlst {
+    item* data;
+    struct itemlst* next;
+} itemlst;
+
+typedef struct wlst {
+    warehouse* data;
+    struct wlst* next;
+} wlst;
+
+
+/******************************************* your's prototypes *******************************************************************************/
+
+void sort_item_list_by_id(itemlst** head);
+void sort_warehouse_list_by_code(wlst** head);
+void add_item(const char *name, int id, itemlst** items, int flag);
+void add_warehouse(const char *location, int code, wlst** warehouses, int flag);
+void assign_item_to_warehouse(int id, int code, itemlst** items, wlst** warehouses);
+void unassign_item_from_warehouse(int id, int code, itemlst** items, wlst** warehouses);
+void print_items(itemlst* items, wlst* warehouses);
+void generate_and_assign_items_and_warehouses(itemlst** items, wlst** warehouses);
+void free_items(itemlst* items);
+void free_warehouses(wlst* warehouses); 
+void checkID(int id,int is_int);
+void print_error_message(int errid);
+
+/******************************************* your's functions ********************************************************************************/
+void sort_item_list_by_id(itemlst** head) {
+    if (*head == NULL) {
+        return; // List is empty
+    }
+
+    int swapped;
+    itemlst *ptr1;
+    itemlst *lptr = NULL;
+
+    do {
+        swapped = 0;
+        ptr1 = *head;
+
+        while (ptr1->next != lptr) {
+            if (ptr1->data->id > ptr1->next->data->id) {
+                // Swap the data of the two nodes
+                item* temp = ptr1->data;
+                ptr1->data = ptr1->next->data;
+                ptr1->next->data = temp;
+                swapped = 1;
+            }
+            ptr1 = ptr1->next;
+        }
+        lptr = ptr1;
+    } while (swapped);
+}
+
+void sort_warehouse_list_by_code(wlst** head) {
+    if (*head == NULL) {
+        return; // List is empty
+    }
+
+    int swapped;
+    wlst *ptr1;
+    wlst *lptr = NULL;
+
+    do {
+        swapped = 0;
+        ptr1 = *head;
+
+        while (ptr1->next != lptr) {
+            if (ptr1->data->code > ptr1->next->data->code) {
+                // Swap the data of the two nodes
+                warehouse* temp = ptr1->data;
+                ptr1->data = ptr1->next->data;
+                ptr1->next->data = temp;
+                swapped = 1;
+            }
+            ptr1 = ptr1->next;
+        }
+        lptr = ptr1;
+    } while (swapped);
+}
+/* Function to get a positive integer from the user */
+void checkID(int id,int is_int){
+    if (id >= 32767 | id < 0 )
+    {
+        print_error_message(id);
+    }
+    if (!is_int) {
+        print_error_message(id);
+    }
+}
+
+
+
+/*****************************************new objects and insert object functions******************************************************/
+//create and add item to the itemlst
+        void add_item(const char *name, int id, itemlst** items,int flag) {
+        
+        // Check if item already exists
+        itemlst *temp = *items;
+        itemlst *temp1 = *items;
+         
+
+        while (temp != NULL && temp->data != NULL) {
+            if (temp->data->id == id) {
+                //printf("Item with ID %d already exists. No changes made.\n", id);
+                return;
+            }
+            temp = temp->next;
+        }
+
+         // Create a new item and add to the front of the list
+         item *new_item = (item *)malloc(sizeof(item));
+         if (new_item == NULL) {
+            printf("Memory allocation failed.\n");
+            return;
+         }
+   
+         new_item->name = (char *)malloc(strlen(name) + 1);
+         if (new_item->name == NULL) {
+            printf("Memory allocation for name failed.\n");
+            free(new_item);
+            return;
+    }
+         strcpy(new_item->name, name);
+         new_item->id = id;
+         
+         // Create a new item list node
+         itemlst *new_node = (itemlst *)malloc(sizeof(itemlst));
+         if (new_node == NULL) {
+             printf("Memory allocation for item list node failed.\n");
+             free(new_item->name);
+             free(new_item);
+             return;
+    }
+
+
+         new_node->data = new_item;
+         new_node->next = NULL;
+
+         // Add the new node to the list
+         if (*items == NULL) {
+             *items = new_node;
+              temp1 = *items;
+         } else {
+             while (temp1->next != NULL) {
+                 temp1 = temp1->next;
+             }
+             temp1->next = new_node;
+         }
+        if(flag){
+        printf("\n Add new item: name %s item id: %d",name,id);
+        }
+        }
+
+
+//create and add warehouse to the itemlst
+        void add_warehouse(const char *location, int code, wlst** warehouses, int flag) {
+        
+        // Check if item already exists
+        wlst *temp = *warehouses;
+        wlst *temp1 = *warehouses;
+        while (temp != NULL && temp->data != NULL) {
+            if (temp->data->code == code) {
+                //printf("Warehouse with code %d already exists. No changes made.\n", code);
+                return;
+            }
+            temp = temp->next;
+        }
+
+         // Create a new item and add to the front of the list
+         warehouse *new_warehouse = (warehouse *)malloc(sizeof(warehouse));
+         if (new_warehouse == NULL) {
+            printf("Memory allocation failed.\n");
+            return;
+         }
+   
+         new_warehouse->location = (char *)malloc(strlen(location) + 1);
+         if (new_warehouse->location == NULL) {
+            printf("Memory allocation for location failed.\n");
+            free(new_warehouse);
+            return;
+    }
+         strcpy(new_warehouse->location, location);
+         new_warehouse->code = code;
+         
+         // Create a new item list node
+         wlst *new_node = (wlst *)malloc(sizeof(wlst));
+         if (new_node == NULL) {
+             printf("Memory allocation for warehouse list node failed.\n");
+             free(new_warehouse->location);
+             free(new_warehouse);
+             return;
+    }
+
+
+         new_node->data = new_warehouse;
+         new_node->next = NULL;
+
+         // Add the new node to the list
+         if (*warehouses == NULL) {
+             *warehouses = new_node;
+              temp1 = *warehouses;
+         } else {
+             while (temp1->next != NULL) {
+                 temp1 = temp1->next;
+             }
+             temp1->next = new_node;
+         }
+         if(flag){
+               printf("\n Add new warehouse: name %s warehouse code: %d",location,code);
+        }
+
+
+        }
+
+/****************************************find Matchings and register item to Warehouse*************************************************/
+
+//add item to warehouse
+   void assign_item_to_warehouse(int id, int code, itemlst** items, wlst** warehouses){
+      
+      itemlst* temp = *items;
+      wlst* temp1 = *warehouses;
+
+      while(temp!=NULL && temp->data->id != id){
+         temp = temp->next;
+      } 
+      
+      if(temp==NULL){
+         print_error_message(2);
+         return;
+      }
+      
+      while(temp1!=NULL && temp1->data->code != code){
+          temp1 = temp1->next;
+      } 
+      
+      if(temp1==NULL){
+         print_error_message(2);
+         return;
+      }
+
+
+      // Create a new item and add to the front of the list
+      warehouse *new_warehouse = (warehouse *)malloc(sizeof(warehouse));
+      if (new_warehouse == NULL) {
+         printf("Memory allocation failed.\n");
+         return;
+      }
+   
+      new_warehouse->location = (char *)malloc(strlen(temp1->data->location) + 1);
+      if (new_warehouse->location == NULL) {
+         printf("Memory allocation for location failed.\n");
+         free(new_warehouse);
+         return;
+    }
+         strcpy(new_warehouse->location, temp1->data->location);
+         new_warehouse->code = temp1->data->code;
+         // Create a new warehouse list node
+         wlst *new_node = (wlst *)malloc(sizeof(wlst));
+         if (new_node == NULL) {
+             printf("Memory allocation for warehouse list node failed.\n");
+             free(new_warehouse->location);
+             free(new_warehouse);
+             return;
+         }
+         //list of warehouses for specific item
+         wlst* temp2 = temp->data->warehouses;
+         if(temp->data->warehouses==NULL){
+          temp->data->warehouses = new_node;
+          new_node->data = new_warehouse;
+          new_node->next = NULL;
+        }else{
+         while(temp2->next!=NULL){
+           temp2=temp2->next;
+        }
+          new_node->data = new_warehouse;
+          new_node->next = NULL;
+          temp2->next=new_node;
+
+        }
+        
+
+
+         // Create a new item and add to the front of the list
+         item *new_item = (item *)malloc(sizeof(item));
+         if (new_item == NULL) {
+            printf("Memory allocation failed.\n");
+            return;
+         }
+   
+         new_item->name = (char *)malloc(strlen(temp->data->name) + 1);
+         if (new_item->name == NULL) {
+            printf("Memory allocation for name failed.\n");
+            free(new_item);
+            return;
+    }
+         strcpy(new_item->name, temp->data->name);
+         new_item->id = id;
+         
+         // Create a new item list node
+         itemlst *new_node1 = (itemlst *)malloc(sizeof(itemlst));
+         if (new_node1 == NULL) {
+             printf("Memory allocation for item list node failed.\n");
+             free(new_item->name);
+             free(new_item);
+             return;
+    }
+
+
+         new_node1->data = new_item;
+         new_node1->next = NULL;
+
+
+        //list of items for specific warehouse
+         itemlst* temp3 = temp1->data->items;
+         if(temp1->data->items==NULL){
+          temp1->data->items = new_node1;
+          new_node1->data = new_item;
+          new_node1->next = NULL;
+        }else{
+         while(temp3->next!=NULL){
+           temp3=temp3->next;
+        }
+          new_node1->data = new_item;
+          new_node1->next = NULL;
+          temp3->next=new_node1;
+
+        }
+
+
+   
+   }
+
+
+/********************************************unregisters objects*************************************************************************/
+
+//unassign item from warehouse
+   void unassign_item_from_warehouse(int id, int code, itemlst** items, wlst** warehouses){
+
+      itemlst* temp = *items;
+      wlst* temp1 = *warehouses;
+      
+      if(temp == NULL || temp1 == NULL){
+         print_error_message(2);
+      }
+
+      while(temp->next!=NULL && temp->data->id != id){
+         temp = temp->next;
+      } 
+      if(temp->next==NULL && temp->data->id != id){
+         print_error_message(2);
+         return;
+      }
+      while(temp1->next!=NULL && temp1->data->code != code){
+          temp1 = temp1->next;
+      } 
+      
+      if(temp1->next==NULL && temp1->data->code != code){
+         print_error_message(2);
+         return;
+      }
+
+      wlst* temp_check = temp->data->warehouses;
+      while(temp_check!=NULL){
+         if(temp_check->data->code==code){
+            break;
+         }
+         temp_check = temp_check->next;
+      }
+      
+      if(temp_check==NULL){
+         print_error_message(2);
+      }
+
+      itemlst* temp_check1 = temp1->data->items;
+      while(temp_check1!=NULL){
+         if(temp_check1->data->id==id){
+            break;
+         }
+         temp_check1 = temp_check1->next;
+      }
+      
+      if(temp_check1==NULL){
+         print_error_message(2);
+      }
+
+
+
+      if(temp->data->warehouses->data->code==code){
+         if(temp->data->warehouses->next==NULL){
+            temp->data->warehouses=NULL;
+         }else{
+         temp->data->warehouses = temp->data->warehouses->next; 
+         }
+      }else{
+
+
+      wlst* temp2 = temp->data->warehouses;
+      while(temp2->next!=NULL && temp2->next->data->code!=code){
+         temp2=temp2->next;
+      }
+
+
+      if(temp2==temp->data->warehouses && temp2->next->next==NULL){//if i am the head so i need to unassign the second one
+         temp2->next =NULL;
+        }else{
+      temp2->next =temp2->next->next;
+      }
+      }
+      
+      //unassign item from warehouse
+      if(temp1->data->items->data->id==id){
+         if(temp1->data->items->next==NULL){
+            temp1->data->items=NULL;
+         }else{
+         temp1->data->items = temp1->data->items->next; 
+         }
+      }else{
+
+
+      itemlst* temp3 = temp1->data->items;
+      while(temp3->next!=NULL && temp3->next->data->id!=id){
+         temp3=temp3->next;
+      }
+      if(temp3==temp1->data->items && temp3->next->next==NULL){//if i am the head so i need to unassign the second one
+         temp3->next =NULL;
+        }else{
+      temp3->next =temp3->next->next;
+      }
+      }
+      }
+
+
+/***********************************************printout functions***********************************************************************/
+
+//print item
+      void print_items(itemlst* items, wlst* warehouses) {
+	int flag1 ;
+         itemlst* temp = items;
+         wlst*   temp1 = warehouses;
+         sort_item_list_by_id(&items);
+         sort_warehouse_list_by_code(&warehouses);
+         if(temp ==  NULL){
+            printf("item LIST: EMPTY!\n"); 
+         }else {
+         printf("item LIST:\n");
+         while(temp != NULL){
+             printf("%d:%s\n",temp->data->id,temp->data->name);
+             sort_warehouse_list_by_code(&(temp->data->warehouses));
+             wlst* temp2 = temp->data->warehouses;
+		 if(temp2 != NULL){
+                printf("Item Warehouses:");
+		 flag1 = 1;
+                
+             while(temp2!=NULL){
+		if(flag1){
+		printf(" %d-%s",temp2->data->code,temp2->data->location);
+		flag1 = 0;
+		}
+		else{
+               printf(", %d-%s",temp2->data->code,temp2->data->location);
+		}               
+		temp2=temp2->next;
+             }
+             //temp = temp->next;
+	     printf("\n");
+             }
+ 		temp = temp->next;
+	 }
+         }
+         
+         if(temp1 ==  NULL){
+            printf("warehouse LIST: EMPTY!\n");
+         }else {
+         printf("warehouse LIST:\n");
+          while(temp1 != NULL){
+             printf("Warehouse code %d, Warehouse name: %s\n",temp1->data->code,temp1->data->location);
+             sort_item_list_by_id(&(temp1->data->items));
+             itemlst* temp3 = temp1->data->items;
+	     if(temp3 != NULL){
+		printf("items:");
+		
+             while(temp3!=NULL){
+               printf(" ID %d Name %s |",temp3->data->id,temp3->data->name);/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+               temp3=temp3->next;
+             }
+             //temp1 = temp1->next;
+		 printf("\n");
+         }
+ 		temp1 = temp1->next;
+	 }////
+         }/////
+         }
+
+
+/*******************************************Generate And Assign Items And Warehouses******************************************************/
+void generate_and_assign_items_and_warehouses(itemlst** items, wlst** warehouses) {
+    srand(1948); // Seed the random number generator
+
+    int i; // Declare the loop variable outside the for loop
+
+    // Generate 10 warehouses
+    for (i = 0; i < 10; i++) {
+        char location[100];
+        snprintf(location, sizeof(location), "Warehouse%d", i);
+        add_warehouse(location, i, warehouses,0);
+    }
+
+	 //print_items(*items,*warehouses);
+
+    // Generate 100 items and assign them to random warehouses
+    for (i = 0; i < 100; i++) {
+        char name[100];
+        snprintf(name, sizeof(name), "Item%d", i);
+        add_item(name, i, items,0);
+        int randomCode = rand() % 10; // Select a random warehouse
+        assign_item_to_warehouse(i, randomCode, items, warehouses);
+    }
+
+}
+
+/***************************************************free**********************************************************************************/
+void free_items(itemlst* items) {
+    while (items!=NULL) {
+        itemlst* next = items->next;
+        free(items->data->name);
+        free(items->data);
+        free(items);
+        items = next;
+    }
+}
+
+void free_warehouses(wlst* warehouses) {
+    while (warehouses!=NULL) {
+        wlst* next = warehouses->next;
+        free(warehouses->data->location);
+        free(warehouses->data);
+        free(warehouses);
+        warehouses = next;
+    }
+}
+
+
+/*****************************************************************************************************************************************/
+
+/*DO NOT TOUCH THIS FUNCTION */
+void getstring(char* buf, int length) {
+    int len;
+    //buf = fgets(buf, length, stdin);
+	scanf("%s", buf);
+    len = (int)strlen(buf);
+    if (buf[len - 1] == '\n')
+        buf[len - 1] = '\0';
+}
+
+
+/*DO NOT TOUCH THIS FUNCTION */
+
+void print_error_message(int errid) {
+	#ifdef DEBUGON
+	fprintf(stderr, "BGU ERROR %d\n", errid);
+	#else
+	fprintf(stderr, "BGU ERROR\n");	
+	#endif
+	exit(-1);
+}
+
+/*DO NOT TOUCH THIS MAIN TEMPLATE - ONLY ADD YOUR FUNCTIONS CALLS */
+int main() {
+    itemlst* items = 0;
+    wlst* warehouses = 0;
+    char  c;
+    char  buf[100];
+    int   id, num;
+    int is_int;
+	
+
+
+    do {
+        printf("Choose:\n"
+            "    i - new item\n"
+            "    w - new warehouse\n"
+            "    a - assign an item to a warehouse\n"
+            "    u - unassign an item from a warehouse(not delete!)\n"
+            "    p - print status\n"
+		   	"    g - generating and assigning 100 items to 10 warehouses\n"
+            "    q - quit\n");
+
+        while ((c = (char)getchar()) == '\n');
+        getchar();
+
+        switch (c) {
+        case 'i':
+            printf("Adding new item.\n");
+
+            printf("item name: ");
+            getstring(buf, 100);
+			
+
+            printf("item ID: ");
+            is_int = scanf("%d", &id);
+			   checkID(id,is_int); 
+            
+			//your function
+         add_item(buf,id,&items,1);
+            
+
+            break;
+
+        case 'w':
+            printf("Adding new warehouse.\n");
+
+            printf("\n warehouse name: ");
+            getstring(buf, 100);
+
+            printf("\n warehouse code: ");
+            is_int=scanf("%d", &num);
+			   checkID(num,is_int);
+            
+			//your function
+            
+          add_warehouse(buf,num,&warehouses,1);
+            break;
+
+        case 'a':
+            printf("Assign an item to a warehouse.\n");
+
+            printf("item ID: ");
+            scanf("%d", &id);
+
+            printf("warehouse code: ");
+            scanf("%d", &num);
+
+            //your function
+
+            assign_item_to_warehouse(id,num,&items,&warehouses);
+            break;
+
+        case 'u':
+            printf("Remove an item from a warehouse.\n");
+
+            printf("item ID: ");
+            scanf("%d", &id);
+
+            printf("warehouse code: ");
+            scanf("%d", &num);
+
+           //your function
+            unassign_item_from_warehouse(id,num,&items,&warehouses);
+            break;
+
+        case 'p':
+            printf("Printing status.\n");
+
+            //your function
+            print_items(items,warehouses);
+
+            break;
+			
+		case 'g':  // generating and assigning items and warehouses
+			printf("Generating and assigning items to warehouses\n");
+		
+			//your function
+		   generate_and_assign_items_and_warehouses(&items,&warehouses);	
+			break;
+
+        case 'q':
+            printf("Quitting...\n");
+            break;
+        }
+
+        if (c != 'q')
+            printf("\n");
+    } while (c != 'q');
+
+    //your free functions
+    free_items(items);
+    free_warehouses(warehouses);
+	exit(0);
+    
+}
